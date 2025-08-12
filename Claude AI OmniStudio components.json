@@ -1,0 +1,593 @@
+ DR_Extract_Questions (DataRaptor Extract)
+
+  {
+    "name": "DR_Extract_Questions",
+    "type": "Extract",
+    "inputParameters": [
+      {
+        "name": "certificationTrack",
+        "type": "Text",
+        "required": true,
+        "description": "Consultant or Developer"                                                                                                                                                                                    
+      },
+      {
+        "name": "topicArea",
+        "type": "Text",
+        "required": false,
+        "description": "FlexCards, OmniScripts, DataTools, etc."                                                                                                                                                                    
+      },
+      {
+        "name": "difficultyLevel",
+        "type": "Text",
+        "required": false,
+        "description": "Beginner, Intermediate, Advanced"                                                                                                                                                                           
+      },
+      {
+        "name": "questionCount",
+        "type": "Number",
+        "required": false,
+        "default": 20                                                                                                                                                                                                               
+      },
+      {
+        "name": "excludeQuestionIds",
+        "type": "Text",
+        "required": false,
+        "description": "Comma-separated list of question IDs to exclude"                                                                                                                                                            
+      }
+    ],
+    "extractSteps": [
+      {
+        "stepName": "GetQuestions",
+        "sourceObject": "Training_Question__c",
+        "filterConditions": [
+          {
+            "field": "Certification_Track__c",
+            "operator": "EQ",
+            "value": "%certificationTrack%"                                                                                                                                                                                         
+          },
+          {
+            "field": "Topic_Area__c",
+            "operator": "EQ",
+            "value": "%topicArea%",
+            "conditional": "%topicArea% != null"                                                                                                                                                                                    
+          },
+          {
+            "field": "Difficulty_Level__c",
+            "operator": "EQ",
+            "value": "%difficultyLevel%",
+            "conditional": "%difficultyLevel% != null"                                                                                                                                                                              
+          },
+          {
+            "field": "Is_Active__c",
+            "operator": "EQ",
+            "value": "true"                                                                                                                                                                                                         
+          }
+        ],
+        "outputFields": [
+          "Id",
+          "Question_Text__c",
+          "Option_A__c",
+          "Option_B__c",
+          "Option_C__c",
+          "Option_D__c",
+          "Correct_Answer__c",
+          "Explanation__c",
+          "Reference_URL__c",
+          "Topic_Area__c",
+          "Subtopic__c",
+          "Difficulty_Level__c",
+          "Question_Type__c",
+          "Exam_Weight__c"                                                                                                                                                                                                          
+        ],
+        "orderBy": "RANDOM()",
+        "limit": "%questionCount%"                                                                                                                                                                                                  
+      }
+    ]
+  }
+
+  DR_Turbo_Questions (DataRaptor Turbo Extract)
+
+  {
+    "name": "DR_Turbo_Questions",
+    "type": "Turbo Extract",
+    "inputParameters": [
+      {
+        "name": "examType",
+        "type": "Text",
+        "required": true                                                                                                                                                                                                            
+      },
+      {
+        "name": "userId",
+        "type": "Text",
+        "required": true                                                                                                                                                                                                            
+      }
+    ],
+    "extractSQL": "SELECT q.Id, q.Question_Text__c, q.Option_A__c, q.Option_B__c, q.Option_C__c, q.Option_D__c, q.Correct_Answer__c, q.Explanation__c, q.Reference_URL__c, q.Topic_Area__c, q.Difficulty_Level__c,                  
+  COALESCE(ua.Attempt_Count__c, 0) as AttemptCount, COALESCE(ua.Last_Correct__c, false) as LastCorrect FROM Training_Question__c q LEFT JOIN User_Question_Attempt__c ua ON q.Id = ua.Question__c AND ua.User__c = :userId          
+  WHERE q.Certification_Track__c = :examType AND q.Is_Active__c = true ORDER BY CASE WHEN ua.Last_Correct__c = false OR ua.Last_Correct__c IS NULL THEN 0 ELSE 1 END, RANDOM() LIMIT 60",
+    "performance": {
+      "cacheEnabled": true,
+      "cacheTTL": 300                                                                                                                                                                                                               
+    }
+  }
+
+  2. User Progress Management DataRaptors
+
+  DR_Extract_UserProgress (DataRaptor Extract)
+
+  {
+    "name": "DR_Extract_UserProgress",
+    "type": "Extract",
+    "inputParameters": [
+      {
+        "name": "userId",
+        "type": "Text",
+        "required": true                                                                                                                                                                                                            
+      },
+      {
+        "name": "certificationTrack",
+        "type": "Text",
+        "required": false                                                                                                                                                                                                           
+      }
+    ],
+    "extractSteps": [
+      {
+        "stepName": "GetUserProfile",
+        "sourceObject": "Training_User_Profile__c",
+        "filterConditions": [
+          {
+            "field": "User__c",
+            "operator": "EQ",
+            "value": "%userId%"                                                                                                                                                                                                     
+          }
+        ],
+        "outputFields": [
+          "Id",
+          "User__c",
+          "Certification_Goals__c",
+          "Experience_Level__c",
+          "Study_Hours_Per_Week__c",
+          "Target_Exam_Date__c",
+          "Preferred_Learning_Style__c",
+          "Created_Date__c",
+          "Last_Study_Session__c"                                                                                                                                                                                                   
+        ]
+      },
+      {
+        "stepName": "GetTopicProgress",
+        "sourceObject": "Topic_Progress__c",
+        "filterConditions": [
+          {
+            "field": "User__c",
+            "operator": "EQ",
+            "value": "%userId%"                                                                                                                                                                                                     
+          },
+          {
+            "field": "Certification_Track__c",
+            "operator": "EQ",
+            "value": "%certificationTrack%",
+            "conditional": "%certificationTrack% != null"                                                                                                                                                                           
+          }
+        ],
+        "outputFields": [
+          "Id",
+          "Topic_Area__c",
+          "Mastery_Level__c",
+          "Questions_Attempted__c",
+          "Questions_Correct__c",
+          "Time_Spent_Minutes__c",
+          "Last_Activity__c",
+          "Certification_Track__c",
+          "Readiness_Score__c"                                                                                                                                                                                                      
+        ]
+      },
+      {
+        "stepName": "GetExamHistory",
+        "sourceObject": "Practice_Exam_Result__c",
+        "filterConditions": [
+          {
+            "field": "User__c",
+            "operator": "EQ",
+            "value": "%userId%"                                                                                                                                                                                                     
+          }
+        ],
+        "outputFields": [
+          "Id",
+          "Exam_Score__c",
+          "Pass_Status__c",
+          "Exam_Date__c",
+          "Certification_Track__c",
+          "Time_Taken_Minutes__c",
+          "Topic_Breakdown__c"                                                                                                                                                                                                      
+        ],
+        "orderBy": "Exam_Date__c DESC",
+        "limit": 10                                                                                                                                                                                                                 
+      }
+    ]
+  }
+
+  DR_Transform_ProgressCalculation (DataRaptor Transform)
+
+  {
+    "name": "DR_Transform_ProgressCalculation",
+    "type": "Transform",
+    "inputParameters": [
+      {
+        "name": "topicScores",
+        "type": "Object",
+        "required": true                                                                                                                                                                                                            
+      },
+      {
+        "name": "certificationTrack",
+        "type": "Text",
+        "required": true                                                                                                                                                                                                            
+      }
+    ],
+    "transformSteps": [
+      {
+        "stepName": "CalculateWeightedScore",
+        "transformType": "Formula",
+        "formula": "CASE(%certificationTrack%, 'Consultant', (%FlexCards% * 0.23) + (%OmniScripts% * 0.27) + (%DataTools% * 0.23) + (%Solutioning% * 0.27), 'Developer', (%FlexCards% * 0.20) + (%OmniScripts% * 0.20) +            
+  (%Integration% * 0.20) + (%DataRaptors% * 0.20) + (%Expressions% * 0.20), 0)",
+        "outputField": "OverallReadiness"                                                                                                                                                                                           
+      },
+      {
+        "stepName": "DetermineReadinessLevel",
+        "transformType": "Decision",
+        "conditions": [
+          {
+            "condition": "%OverallReadiness% >= 80",
+            "output": "Exam Ready"                                                                                                                                                                                                  
+          },
+          {
+            "condition": "%OverallReadiness% >= 65",
+            "output": "Almost Ready"                                                                                                                                                                                                
+          },
+          {
+            "condition": "%OverallReadiness% >= 50",
+            "output": "Needs Practice"                                                                                                                                                                                              
+          },
+          {
+            "condition": "true",
+            "output": "Beginner"                                                                                                                                                                                                    
+          }
+        ],
+        "outputField": "ReadinessLevel"                                                                                                                                                                                             
+      },
+      {
+        "stepName": "IdentifyWeakAreas",
+        "transformType": "Formula",
+        "formula": "IF(%FlexCards% < 60, 'FlexCards,', '') + IF(%OmniScripts% < 60, 'OmniScripts,', '') + IF(%DataTools% < 60, 'DataTools,', '') + IF(%Integration% < 60, 'Integration,', '') + IF(%DataRaptors% < 60,              
+  'DataRaptors,', '') + IF(%Expressions% < 60, 'Expressions,', '')",
+        "outputField": "WeakAreas"                                                                                                                                                                                                  
+      },
+      {
+        "stepName": "EstimateStudyTime",
+        "transformType": "Formula",
+        "formula": "CASE(%ReadinessLevel%, 'Exam Ready', 10, 'Almost Ready', 25, 'Needs Practice', 50, 75)",
+        "outputField": "RecommendedStudyHours"                                                                                                                                                                                      
+      }
+    ]
+  }
+
+  DR_Load_StudyProgress (DataRaptor Load)
+
+  {
+    "name": "DR_Load_StudyProgress",
+    "type": "Load",
+    "inputParameters": [
+      {
+        "name": "userId",
+        "type": "Text",
+        "required": true                                                                                                                                                                                                            
+      },
+      {
+        "name": "sessionData",
+        "type": "Object",
+        "required": true                                                                                                                                                                                                            
+      }
+    ],
+    "loadSteps": [
+      {
+        "stepName": "UpdateTopicProgress",
+        "targetObject": "Topic_Progress__c",
+        "upsertKey": "User__c,Topic_Area__c,Certification_Track__c",
+        "fieldMappings": [
+          {
+            "sourceField": "%userId%",
+            "targetField": "User__c"                                                                                                                                                                                                
+          },
+          {
+            "sourceField": "%sessionData.topicArea%",
+            "targetField": "Topic_Area__c"                                                                                                                                                                                          
+          },
+          {
+            "sourceField": "%sessionData.certificationTrack%",
+            "targetField": "Certification_Track__c"                                                                                                                                                                                 
+          },
+          {
+            "sourceField": "COALESCE(%Questions_Attempted__c%, 0) + %sessionData.questionsAttempted%",
+            "targetField": "Questions_Attempted__c"                                                                                                                                                                                 
+          },
+          {
+            "sourceField": "COALESCE(%Questions_Correct__c%, 0) + %sessionData.questionsCorrect%",
+            "targetField": "Questions_Correct__c"                                                                                                                                                                                   
+          },
+          {
+            "sourceField": "COALESCE(%Time_Spent_Minutes__c%, 0) + %sessionData.timeSpentMinutes%",
+            "targetField": "Time_Spent_Minutes__c"                                                                                                                                                                                  
+          },
+          {
+            "sourceField": "NOW()",
+            "targetField": "Last_Activity__c"                                                                                                                                                                                       
+          },
+          {
+            "sourceField": "(%Questions_Correct__c% / %Questions_Attempted__c%) * 100",
+            "targetField": "Mastery_Level__c"                                                                                                                                                                                       
+          }
+        ]
+      },
+      {
+        "stepName": "CreateStudySession",
+        "targetObject": "Study_Session__c",
+        "operation": "Insert",
+        "fieldMappings": [
+          {
+            "sourceField": "%userId%",
+            "targetField": "User__c"                                                                                                                                                                                                
+          },
+          {
+            "sourceField": "%sessionData.sessionType%",
+            "targetField": "Session_Type__c"                                                                                                                                                                                        
+          },
+          {
+            "sourceField": "%sessionData.questionsAttempted%",
+            "targetField": "Questions_Attempted__c"                                                                                                                                                                                 
+          },
+          {
+            "sourceField": "%sessionData.questionsCorrect%",
+            "targetField": "Questions_Correct__c"                                                                                                                                                                                   
+          },
+          {
+            "sourceField": "%sessionData.timeSpentMinutes%",
+            "targetField": "Duration_Minutes__c"                                                                                                                                                                                    
+          },
+          {
+            "sourceField": "NOW()",
+            "targetField": "Session_Date__c"                                                                                                                                                                                        
+          }
+        ]
+      }
+    ]
+  }
+
+  3. Exam Results Management DataRaptors
+
+  DR_Transform_ExamResults (DataRaptor Transform)
+
+  {
+    "name": "DR_Transform_ExamResults",
+    "type": "Transform",
+    "inputParameters": [
+      {
+        "name": "examAnswers",
+        "type": "Object[]",
+        "required": true                                                                                                                                                                                                            
+      },
+      {
+        "name": "userId",
+        "type": "Text",
+        "required": true                                                                                                                                                                                                            
+      },
+      {
+        "name": "certificationTrack",
+        "type": "Text",
+        "required": true                                                                                                                                                                                                            
+      }
+    ],
+    "transformSteps": [
+      {
+        "stepName": "CalculateOverallScore",
+        "transformType": "Formula",
+        "formula": "(COUNT(FILTER(%examAnswers%, isCorrect = true)) / COUNT(%examAnswers%)) * 100",
+        "outputField": "OverallScore"                                                                                                                                                                                               
+      },
+      {
+        "stepName": "DeterminePassStatus",
+        "transformType": "Decision",
+        "conditions": [
+          {
+            "condition": "%OverallScore% >= 63",
+            "output": "Pass"                                                                                                                                                                                                        
+          },
+          {
+            "condition": "true",
+            "output": "Fail"                                                                                                                                                                                                        
+          }
+        ],
+        "outputField": "PassStatus"                                                                                                                                                                                                 
+      },
+      {
+        "stepName": "CalculateTopicBreakdown",
+        "transformType": "GroupBy",
+        "groupByField": "topicArea",
+        "aggregations": [
+          {
+            "field": "isCorrect",
+            "operation": "COUNT",
+            "condition": "isCorrect = true",
+            "outputField": "TopicCorrect"                                                                                                                                                                                           
+          },
+          {
+            "field": "questionId",
+            "operation": "COUNT",
+            "outputField": "TopicTotal"                                                                                                                                                                                             
+          }
+        ],
+        "formula": "(%TopicCorrect% / %TopicTotal%) * 100",
+        "outputField": "TopicScore"                                                                                                                                                                                                 
+      },
+      {
+        "stepName": "GenerateRecommendations",
+        "transformType": "Decision",
+        "conditions": [
+          {
+            "condition": "%PassStatus% = 'Pass'",
+            "output": "Congratulations! You're ready for the certification exam."                                                                                                                                                   
+          },
+          {
+            "condition": "%OverallScore% >= 55",
+            "output": "You're close! Focus on weak areas and retake practice exams."                                                                                                                                                
+          },
+          {
+            "condition": "true",
+            "output": "Continue studying and practicing. Focus on fundamentals."                                                                                                                                                    
+          }
+        ],
+        "outputField": "Recommendations"                                                                                                                                                                                            
+      }
+    ]
+  }
+
+  DR_Load_ExamResults (DataRaptor Load)
+
+  {
+    "name": "DR_Load_ExamResults",
+    "type": "Load",
+    "inputParameters": [
+      {
+        "name": "examResults",
+        "type": "Object",
+        "required": true                                                                                                                                                                                                            
+      }
+    ],
+    "loadSteps": [
+      {
+        "stepName": "SaveExamResult",
+        "targetObject": "Practice_Exam_Result__c",
+        "operation": "Insert",
+        "fieldMappings": [
+          {
+            "sourceField": "%examResults.userId%",
+            "targetField": "User__c"                                                                                                                                                                                                
+          },
+          {
+            "sourceField": "%examResults.overallScore%",
+            "targetField": "Exam_Score__c"                                                                                                                                                                                          
+          },
+          {
+            "sourceField": "%examResults.passStatus%",
+            "targetField": "Pass_Status__c"                                                                                                                                                                                         
+          },
+          {
+            "sourceField": "%examResults.certificationTrack%",
+            "targetField": "Certification_Track__c"                                                                                                                                                                                 
+          },
+          {
+            "sourceField": "%examResults.timeTaken%",
+            "targetField": "Time_Taken_Minutes__c"                                                                                                                                                                                  
+          },
+          {
+            "sourceField": "JSON.stringify(%examResults.topicBreakdown%)",
+            "targetField": "Topic_Breakdown__c"                                                                                                                                                                                     
+          },
+          {
+            "sourceField": "NOW()",
+            "targetField": "Exam_Date__c"                                                                                                                                                                                           
+          }
+        ]
+      },
+      {
+        "stepName": "UpdateUserStatistics",
+        "targetObject": "Training_User_Profile__c",
+        "upsertKey": "User__c",
+        "fieldMappings": [
+          {
+            "sourceField": "%examResults.userId%",
+            "targetField": "User__c"                                                                                                                                                                                                
+          },
+          {
+            "sourceField": "COALESCE(%Total_Exams_Taken__c%, 0) + 1",
+            "targetField": "Total_Exams_Taken__c"                                                                                                                                                                                   
+          },
+          {
+            "sourceField": "IF(%examResults.passStatus% = 'Pass', COALESCE(%Total_Exams_Passed__c%, 0) + 1, COALESCE(%Total_Exams_Passed__c%, 0))",
+            "targetField": "Total_Exams_Passed__c"                                                                                                                                                                                  
+          },
+          {
+            "sourceField": "GREATEST(%Highest_Score__c%, %examResults.overallScore%)",
+            "targetField": "Highest_Score__c"                                                                                                                                                                                       
+          },
+          {
+            "sourceField": "NOW()",
+            "targetField": "Last_Exam_Date__c"                                                                                                                                                                                      
+          }
+        ]
+      }
+    ]
+  }
+
+  4. Analytics and Reporting DataRaptors
+
+  DR_Extract_Analytics (DataRaptor Extract)
+
+  {
+    "name": "DR_Extract_Analytics",
+    "type": "Extract",
+    "inputParameters": [
+      {
+        "name": "reportType",
+        "type": "Text",
+        "required": true,
+        "description": "UserPerformance, QuestionEffectiveness, OverallStats"                                                                                                                                                       
+      },
+      {
+        "name": "dateRange",
+        "type": "Number",
+        "required": false,
+        "default": 30,
+        "description": "Days to look back"                                                                                                                                                                                          
+      }
+    ],
+    "extractSteps": [
+      {
+        "stepName": "GetUserPerformanceStats",
+        "sourceObject": "Practice_Exam_Result__c",
+        "conditional": "%reportType% = 'UserPerformance'",
+        "filterConditions": [
+          {
+            "field": "Exam_Date__c",
+            "operator": "GTE",
+            "value": "TODAY() - %dateRange%"                                                                                                                                                                                        
+          }
+        ],
+        "outputFields": [
+          "User__c",
+          "AVG(Exam_Score__c) AvgScore",
+          "MAX(Exam_Score__c) HighestScore",
+          "COUNT(Id) TotalAttempts",
+          "COUNT(CASE WHEN Pass_Status__c = 'Pass' THEN 1 END) PassedAttempts"                                                                                                                                                      
+        ],
+        "groupBy": "User__c"                                                                                                                                                                                                        
+      },
+      {
+        "stepName": "GetQuestionStats",
+        "sourceObject": "User_Question_Attempt__c",
+        "conditional": "%reportType% = 'QuestionEffectiveness'",
+        "filterConditions": [
+          {
+            "field": "Attempt_Date__c",
+            "operator": "GTE",
+            "value": "TODAY() - %dateRange%"                                                                                                                                                                                        
+          }
+        ],
+        "outputFields": [
+          "Question__c",
+          "COUNT(Id) TotalAttempts",
+          "COUNT(CASE WHEN Is_Correct__c = true THEN 1 END) CorrectAttempts",
+          "AVG(CASE WHEN Is_Correct__c = true THEN 100 ELSE 0 END) SuccessRate"                                                                                                                                                     
+        ],
+        "groupBy": "Question__c"                                                                                                                                                                                                    
+      }
+    ]
+  }

@@ -1,0 +1,339 @@
+● FlexCard Architecture Design
+
+  Primary FlexCards Structure
+
+  1. Main Dashboard FlexCard (Training_Dashboard)
+
+  {
+    "name": "Training Dashboard",
+    "cardType": "Flyout",
+    "displayMode": "ReadOnly",
+    "datasource": "Integration Procedure: IP_GetUserProgress",
+    "states": [
+      {
+        "name": "default",
+        "conditions": "true",
+        "fields": [
+          {
+            "name": "overallProgress",
+            "label": "Overall Progress",
+            "displayType": "Progress Bar",
+            "width": "100%"                                                                                                                                                                                                         
+          },
+          {
+            "name": "consultantScore",
+            "label": "Consultant Readiness",
+            "displayType": "Chart - Radial",
+            "width": "50%"                                                                                                                                                                                                          
+          },
+          {
+            "name": "developerScore",
+            "label": "Developer Readiness",
+            "displayType": "Chart - Radial",
+            "width": "50%"                                                                                                                                                                                                          
+          }
+        ],
+        "actions": [
+          {
+            "actionType": "Navigate",
+            "actionValue": "Consultant Path",
+            "label": "Start Consultant Track"                                                                                                                                                                                       
+          },
+          {
+            "actionType": "Navigate",
+            "actionValue": "Developer Path",
+            "label": "Start Developer Track"                                                                                                                                                                                        
+          }
+        ]
+      }
+    ]
+  }
+
+  2. Exam Selection FlexCards
+
+  Consultant Exam FlexCard (Consultant_Exam_Card)
+  {
+    "name": "OmniStudio Consultant",
+    "cardType": "Standard",
+    "displayMode": "ReadOnly",
+    "datasource": "Static Resource: ConsultantExamInfo",
+    "styling": {
+      "background": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      "textColor": "white"                                                                                                                                                                                                          
+    },
+    "fields": [
+      {
+        "name": "examTitle",
+        "value": "OmniStudio Consultant",
+        "displayType": "Text",
+        "styling": "font-size: 24px; font-weight: bold;"                                                                                                                                                                            
+      },
+      {
+        "name": "examDetails",
+        "displayType": "Block",
+        "fields": [
+          {"name": "questions", "label": "Questions", "value": "60 + 5 unscored"},
+          {"name": "duration", "label": "Duration", "value": "105 minutes"},
+          {"name": "passingScore", "label": "Passing Score", "value": "63%"},
+          {"name": "cost", "label": "Cost", "value": "$200 USD"}
+        ]
+      },
+      {
+        "name": "contentAreas",
+        "label": "Content Areas",
+        "displayType": "List",
+        "items": [
+          "FlexCards (23%)",
+          "OmniScripts (27%)",
+          "Data Tools (23%)",
+          "Best Fit Solutioning (27%)"                                                                                                                                                                                              
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "actionType": "OmniScript",
+        "actionValue": "ConsultantStudyPath",
+        "label": "Begin Study Path",
+        "styling": "btn-primary"                                                                                                                                                                                                    
+      },
+      {
+        "actionType": "Navigate",
+        "actionValue": "Practice Exam",
+        "label": "Take Practice Exam"                                                                                                                                                                                               
+      }
+    ]
+  }
+
+  Developer Exam FlexCard (Developer_Exam_Card)
+  {
+    "name": "OmniStudio Developer",
+    "cardType": "Standard",
+    "displayMode": "ReadOnly",
+    "datasource": "Static Resource: DeveloperExamInfo",
+    "styling": {
+      "background": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+      "textColor": "white"                                                                                                                                                                                                          
+    },
+    "fields": [
+      {
+        "name": "examTitle",
+        "value": "OmniStudio Developer",
+        "displayType": "Text",
+        "styling": "font-size: 24px; font-weight: bold;"                                                                                                                                                                            
+      },
+      {
+        "name": "examDetails",
+        "displayType": "Block",
+        "fields": [
+          {"name": "questions", "label": "Questions", "value": "60 + 5 unscored"},
+          {"name": "duration", "label": "Duration", "value": "105 minutes"},
+          {"name": "passingScore", "label": "Passing Score", "value": "63%"},
+          {"name": "cost", "label": "Cost", "value": "$200 USD"}
+        ]
+      },
+      {
+        "name": "contentAreas",
+        "label": "Content Areas",
+        "displayType": "List",
+        "items": [
+          "FlexCards",
+          "OmniScripts",
+          "Integration Procedures",
+          "DataRaptors",
+          "Expression Sets & Decision Matrices"                                                                                                                                                                                     
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "actionType": "OmniScript",
+        "actionValue": "DeveloperStudyPath",
+        "label": "Begin Study Path",
+        "styling": "btn-primary"                                                                                                                                                                                                    
+      },
+      {
+        "actionType": "Navigate",
+        "actionValue": "Practice Exam",
+        "label": "Take Practice Exam"                                                                                                                                                                                               
+      }
+    ]
+  }
+
+  3. Progress Tracking FlexCards
+
+  Topic Progress FlexCard (Topic_Progress_Card)
+  {
+    "name": "Topic Progress",
+    "cardType": "Flyout",
+    "displayMode": "ReadOnly",
+    "datasource": "DataRaptor: DR_GetTopicProgress",
+    "conditions": [
+      {
+        "name": "consultant_track",
+        "condition": "{certificationTrack} == 'Consultant'",
+        "fields": [
+          {
+            "name": "flexcardProgress",
+            "label": "FlexCards (23%)",
+            "displayType": "Progress Bar",
+            "value": "{flexcardScore}",
+            "styling": "width: 100%; margin-bottom: 10px;"                                                                                                                                                                          
+          },
+          {
+            "name": "omniscriptProgress",
+            "label": "OmniScripts (27%)",
+            "displayType": "Progress Bar",
+            "value": "{omniscriptScore}"                                                                                                                                                                                            
+          },
+          {
+            "name": "dataToolsProgress",
+            "label": "Data Tools (23%)",
+            "displayType": "Progress Bar",
+            "value": "{dataToolsScore}"                                                                                                                                                                                             
+          },
+          {
+            "name": "solutioningProgress",
+            "label": "Best Fit Solutioning (27%)",
+            "displayType": "Progress Bar",
+            "value": "{solutioningScore}"                                                                                                                                                                                           
+          }
+        ]
+      },
+      {
+        "name": "developer_track",
+        "condition": "{certificationTrack} == 'Developer'",
+        "fields": [
+          {
+            "name": "flexcardProgress",
+            "label": "FlexCards",
+            "displayType": "Progress Bar",
+            "value": "{flexcardScore}"                                                                                                                                                                                              
+          },
+          {
+            "name": "omniscriptProgress",
+            "label": "OmniScripts",
+            "displayType": "Progress Bar",
+            "value": "{omniscriptScore}"                                                                                                                                                                                            
+          },
+          {
+            "name": "integrationProgress",
+            "label": "Integration Procedures",
+            "displayType": "Progress Bar",
+            "value": "{integrationScore}"                                                                                                                                                                                           
+          },
+          {
+            "name": "dataraptorProgress",
+            "label": "DataRaptors",
+            "displayType": "Progress Bar",
+            "value": "{dataraptorScore}"                                                                                                                                                                                            
+          },
+          {
+            "name": "expressionProgress",
+            "label": "Expression Sets & Decision Matrices",
+            "displayType": "Progress Bar",
+            "value": "{expressionScore}"                                                                                                                                                                                            
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "actionType": "Navigate",
+        "actionValue": "Weak Areas",
+        "label": "Focus on Weak Areas"                                                                                                                                                                                              
+      }
+    ]
+  }
+
+  4. Results Summary FlexCard (Results_Summary_Card)
+
+  {
+    "name": "Exam Results",
+    "cardType": "Standard",
+    "displayMode": "ReadOnly",
+    "datasource": "Integration Procedure: IP_GetExamResults",
+    "states": [
+      {
+        "name": "passed",
+        "condition": "{examScore} >= 63",
+        "styling": {
+          "background": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+          "border": "3px solid #28a745"                                                                                                                                                                                             
+        },
+        "fields": [
+          {
+            "name": "resultStatus",
+            "value": "🎉 PASSED!",
+            "displayType": "Text",
+            "styling": "font-size: 32px; text-align: center; color: #28a745;"                                                                                                                                                       
+          },
+          {
+            "name": "finalScore",
+            "label": "Final Score",
+            "displayType": "Text",
+            "value": "{examScore}%",
+            "styling": "font-size: 24px; text-align: center;"                                                                                                                                                                       
+          },
+          {
+            "name": "breakdown",
+            "displayType": "Chart - Bar",
+            "data": "{topicScores}"                                                                                                                                                                                                 
+          }
+        ],
+        "actions": [
+          {
+            "actionType": "Navigate",
+            "actionValue": "Certificate",
+            "label": "View Certificate"                                                                                                                                                                                             
+          },
+          {
+            "actionType": "Navigate",
+            "actionValue": "Next Steps",
+            "label": "What's Next?"                                                                                                                                                                                                 
+          }
+        ]
+      },
+      {
+        "name": "failed",
+        "condition": "{examScore} < 63",
+        "styling": {
+          "background": "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
+          "border": "3px solid #dc3545"                                                                                                                                                                                             
+        },
+        "fields": [
+          {
+            "name": "resultStatus",
+            "value": "Keep Studying!",
+            "displayType": "Text",
+            "styling": "font-size: 28px; text-align: center; color: #dc3545;"                                                                                                                                                       
+          },
+          {
+            "name": "finalScore",
+            "label": "Score",
+            "displayType": "Text",
+            "value": "{examScore}% (Need 63%)",
+            "styling": "font-size: 20px; text-align: center;"                                                                                                                                                                       
+          },
+          {
+            "name": "weakAreas",
+            "label": "Areas to Improve",
+            "displayType": "List",
+            "data": "{weakTopics}"                                                                                                                                                                                                  
+          }
+        ],
+        "actions": [
+          {
+            "actionType": "OmniScript",
+            "actionValue": "StudyPlan",
+            "label": "Create Study Plan"                                                                                                                                                                                            
+          },
+          {
+            "actionType": "Navigate",
+            "actionValue": "Practice More",
+            "label": "More Practice Questions"                                                                                                                                                                                      
+          }
+        ]
+      }
+    ]
+  }
