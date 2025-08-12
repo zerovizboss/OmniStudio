@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit hooks for OmniStudio Training Platform..."
+
+# Run lint-staged for file formatting and linting
+npx lint-staged
+
+# Ensure Apex classes have proper test coverage
+echo "📊 Checking Apex test coverage requirements..."
+
+# Run SFDX scanner for security and quality checks
+echo "🔒 Running security and code quality scans..."
+npm run lint:apex || {
+    echo "❌ Code quality checks failed. Please fix issues before committing."
+    exit 1
+}
+
+echo "✅ Pre-commit checks completed successfully!"

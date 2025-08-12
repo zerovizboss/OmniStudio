@@ -2,11 +2,20 @@
   "packageDirectories": [
     {
       "path": "force-app",
-      "default": true
+      "default": true,
+      "package": "OmniStudioTraining",
+      "versionName": "ver 1.0",
+      "versionNumber": "1.0.0.NEXT"
     }
   ],
   "name": "OmniStudioTraining",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "60.0"
+  "sourceApiVersion": "64.0",
+  "packageAliases": {
+    "OmniStudioTraining": "0Ho000000000000000"
+  },
+  "plugins": {
+    "@salesforce/sfdx-scanner": "3.19.0"
+  }
 }

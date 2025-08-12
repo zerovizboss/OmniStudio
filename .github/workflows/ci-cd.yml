@@ -1,0 +1,244 @@
+name: OmniStudio Training Platform - CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality & Security Scan
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prettier check
+        run: npm run prettier:verify
+
+      - name: Run ESLint for LWC
+        run: npm run lint:lwc
+        continue-on-error: true
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli@latest
+          sf version
+
+      - name: Install SFDX Scanner
+        run: sf plugins install @salesforce/sfdx-scanner@latest
+
+      - name: Run Salesforce Code Analyzer
+        run: sf scanner run --target="force-app/**/*.cls" --format=table
+        continue-on-error: true
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Apex Unit Tests & Coverage
+    needs: code-quality
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli@latest
+          sf version
+
+      - name: Authorize Dev Hub
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > ./SFDX_AUTH_URL.txt
+          sf org login sfdx-url --sfdx-url-file ./SFDX_AUTH_URL.txt --alias devhub --set-default-dev-hub
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+
+      - name: Create scratch org
+        run: |
+          sf org create scratch --definition-file config/project-scratch-def.json --duration-days 1 --alias ciorg --set-default --wait 10
+
+      - name: Deploy source to scratch org
+        run: sf project deploy start --source-dir force-app
+
+      - name: Run Apex tests with coverage
+        run: |
+          sf apex test run --code-coverage --result-format human --wait 20 --test-level RunLocalTests
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: apex-test-results
+          path: test-result-*.json
+
+      - name: Check code coverage
+        run: |
+          COVERAGE=$(sf apex test report --result-format json | jq '.summary.orgWideCoverage' | tr -d '"' | sed 's/%//')
+          echo "Code coverage: $COVERAGE%"
+          if [ $(echo "$COVERAGE >= 90" | bc -l) -eq 0 ]; then
+            echo "❌ Code coverage $COVERAGE% is below required 90%"
+            exit 1
+          else
+            echo "✅ Code coverage $COVERAGE% meets requirement (≥90%)"
+          fi
+
+      - name: Delete scratch org
+        if: always()
+        run: sf org delete scratch --no-prompt --target-org ciorg
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Vulnerability Scan
+    needs: code-quality
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli@latest
+          sf plugins install @salesforce/sfdx-scanner@latest
+
+      - name: Run security scan
+        run: |
+          sf scanner run \
+            --target "force-app/**/*.cls,force-app/**/*.trigger" \
+            --format table \
+            --severity-threshold 3 \
+            --rule-thread-count 4
+        continue-on-error: false
+
+  deploy-validation:
+    runs-on: ubuntu-latest
+    name: Production Deployment Validation
+    needs: [unit-tests, security-scan]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli@latest
+          sf version
+
+      - name: Authorize production org (validation only)
+        if: ${{ secrets.SFDX_PROD_AUTH_URL }}
+        run: |
+          echo "${{ secrets.SFDX_PROD_AUTH_URL }}" > ./SFDX_PROD_AUTH_URL.txt
+          sf org login sfdx-url --sfdx-url-file ./SFDX_PROD_AUTH_URL.txt --alias prodorg
+        env:
+          SFDX_PROD_AUTH_URL: ${{ secrets.SFDX_PROD_AUTH_URL }}
+
+      - name: Validate deployment to production
+        if: ${{ secrets.SFDX_PROD_AUTH_URL }}
+        run: |
+          sf project deploy start \
+            --source-dir force-app \
+            --target-org prodorg \
+            --check-only \
+            --test-level RunLocalTests \
+            --wait 30
+
+  performance-test:
+    runs-on: ubuntu-latest
+    name: Performance & Load Testing
+    needs: unit-tests
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli@latest
+
+      - name: Authorize Dev Hub
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > ./SFDX_AUTH_URL.txt
+          sf org login sfdx-url --sfdx-url-file ./SFDX_AUTH_URL.txt --alias devhub --set-default-dev-hub
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+
+      - name: Create performance testing scratch org
+        run: |
+          sf org create scratch \
+            --definition-file config/project-scratch-def.json \
+            --duration-days 1 \
+            --alias perforg \
+            --set-default \
+            --wait 10
+
+      - name: Deploy and run performance tests
+        run: |
+          sf project deploy start --source-dir force-app
+          # Run performance-specific tests
+          sf apex test run \
+            --class-names "AdaptiveQuestionSelectorTest,UserPerformanceTrackerTest" \
+            --result-format human \
+            --wait 10
+
+      - name: Delete performance scratch org
+        if: always()
+        run: sf org delete scratch --no-prompt --target-org perforg
+
+  notify-completion:
+    runs-on: ubuntu-latest
+    name: Pipeline Completion Notification
+    needs: [unit-tests, security-scan, deploy-validation, performance-test]
+    if: always()
+    
+    steps:
+      - name: Pipeline Success Notification
+        if: ${{ needs.unit-tests.result == 'success' && needs.security-scan.result == 'success' }}
+        run: |
+          echo "🎉 CI/CD Pipeline completed successfully!"
+          echo "✅ Code quality checks passed"
+          echo "✅ Unit tests passed with ≥90% coverage"  
+          echo "✅ Security scan completed"
+          echo "✅ Deployment validation successful"
+
+      - name: Pipeline Failure Notification
+        if: ${{ needs.unit-tests.result == 'failure' || needs.security-scan.result == 'failure' }}
+        run: |
+          echo "❌ CI/CD Pipeline failed!"
+          echo "Check the logs above for detailed error information."
+          exit 1

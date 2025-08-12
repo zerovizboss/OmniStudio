@@ -1,0 +1,53 @@
+{
+  "orgName": "OmniStudio Training Platform",
+  "description": "Scratch org for OmniStudio Training Platform development with adaptive learning features",
+  "edition": "Developer",
+  "country": "US",
+  "language": "en_US",
+  "features": [
+    "Communities",
+    "Sites",
+    "SiteDotCom",
+    "AddCustomApps",
+    "LightningExperienceUser",
+    "ProcessBuilder",
+    "Workflow"
+  ],
+  "settings": {
+    "lightningExperienceSettings": {
+      "enableS1DesktopEnabled": true
+    },
+    "mobileSettings": {
+      "enableS1EncryptedStoragePref2": false
+    },
+    "chatterSettings": {
+      "enableChatter": true
+    },
+    "userManagementSettings": {
+      "enableNewProfileUI": true
+    },
+    "securitySettings": {
+      "enableAdminLoginAsAnyUser": true,
+      "sessionSettings": {
+        "forceRelogin": false,
+        "requiredSessionLevel": "LOW"
+      }
+    },
+    "omniChannelSettings": {
+      "enableOmniChannel": true
+    }
+  },
+  "objectSettings": {
+    "case": {
+      "sharingModel": "readWrite"
+    },
+    "account": {
+      "sharingModel": "readWrite"
+    },
+    "contact": {
+      "sharingModel": "readWrite"
+    }
+  },
+  "hasSampleData": false,
+  "adminEmail": "admin@omnistudio-training.org"
+}
